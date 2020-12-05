@@ -1,13 +1,10 @@
-import Link from 'next/link'
 import Layout from '../components/Layout'
 
 const IndexPage = () => (
-  <Layout title="Home | Next.js + TypeScript Example">
+  <Layout title="Hello From">
     <h1>Hello Next.js 👋</h1>
     <p>
-      <Link href="/about">
-        <a>About</a>
-      </Link>
+      See <a href="http://localhost:3000/api/preview?url=https://google.com">http://localhost:3000/api/preview?url=https://google.com</a>
     </p>
   </Layout>
 )
