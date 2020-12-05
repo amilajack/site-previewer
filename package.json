@@ -8,6 +8,7 @@
     "type-check": "tsc"
   },
   "dependencies": {
+    "chrome-aws-lambda": "^5.5.0",
     "next": "latest",
     "puppeteer": "^5.5.0",
     "react": "^16.12.0",

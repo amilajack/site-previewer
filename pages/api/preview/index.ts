@@ -1,6 +1,38 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import puppeteer from 'puppeteer';
 import validUrl from 'valid-url';
+import chromium from 'chrome-aws-lambda';
+import { Page } from 'puppeteer';
+
+const waitTillHTMLRendered = async (page: Page, timeout = 30000) => {
+   const checkDurationMsecs = 1000;
+   const maxChecks = timeout / checkDurationMsecs;
+   let lastHTMLSize = 0;
+   let checkCounts = 1;
+   let countStableSizeIterations = 0;
+   const minStableSizeIterations = 3;
+ 
+   while(checkCounts++ <= maxChecks){
+     let html = await page.content();
+     let currentHTMLSize = html.length; 
+ 
+     let bodyHTMLSize = await page.evaluate(() => document.body.innerHTML.length);
+ 
+     console.log('last: ', lastHTMLSize, ' <> curr: ', currentHTMLSize, " body html size: ", bodyHTMLSize);
+ 
+     if(lastHTMLSize != 0 && currentHTMLSize == lastHTMLSize) 
+       countStableSizeIterations++;
+     else 
+       countStableSizeIterations = 0; //reset the counter
+ 
+     if(countStableSizeIterations >= minStableSizeIterations) {
+       console.log("Page rendered fully..");
+       break;
+     }
+ 
+     lastHTMLSize = currentHTMLSize;
+     await page.waitFor(checkDurationMsecs);
+   }  
+ };
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
    const { url } = req.query as { url: string };
@@ -12,9 +44,19 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
    }
 
    // Launch
-   const browser = await puppeteer.launch();
+   const browser = await chromium.puppeteer.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath,
+      ignoreHTTPSErrors: true,
+    });
    const page = await browser.newPage();
-   await page.goto(url);
+   await page.goto(url, {
+      waitUntil: 'domcontentloaded',
+   });
+   await page.waitFor('*')
+
+   await waitTillHTMLRendered(page)
    const img = await page.screenshot({
       type: 'jpeg'
    });
